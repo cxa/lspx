@@ -1,0 +1,20 @@
+{
+  "name": "@frontside/lspx",
+  "tasks": {
+    "dev": "deno run --allow-env --allow-run main.ts",
+    "compile": "deno compile -o lspx --allow-env --allow-run main.ts"
+  },
+  "imports": {
+    "effection": "jsr:@effection/effection@^4.0.0-alpha.7",
+    "@std/assert": "jsr:@std/assert@1",
+    "vscode-jsonrpc": "npm:vscode-jsonrpc@^8.2.1",
+    "zod": "npm:zod@^3.24.2",
+    "zod-opts": "npm:zod-opts@^0.1.8"
+  },
+  "exports": "./mod.ts",
+  "lint": {
+    "rules": {
+      "exclude": ["prefer-const", "require-yield"]
+    }
+  }
+}
