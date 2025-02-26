@@ -24,7 +24,8 @@ await main(function* (argv) {
       },
       "lsp": {
         type: z.array(z.string()),
-        description: "start and muliplex a server with specified command string",
+        description:
+          "start and muliplex a server with specified command string",
       },
     }).parse(argv);
   console.log(opts);

@@ -2,6 +2,7 @@
   "name": "@frontside/lspx",
   "tasks": {
     "dev": "deno run --allow-env --allow-run main.ts",
+    "test": "echo ✅",
     "compile": "deno compile -o lspx --allow-env --allow-run main.ts"
   },
   "imports": {
