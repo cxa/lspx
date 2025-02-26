@@ -17,7 +17,7 @@ There are often many language servers active for a given file. For example, if
 you are editing some TypeScript for the web, you might want to run some
 combination of the following:
 
-- __typescript_ (ts) resolve symbols, provide refactorings
+- _typescript_ (ts) resolve symbols, provide refactorings
 - _tailwind_ (css) provides completion for tailwind utility clases
 - _eslint_ (ts) highlight warnings and errors based on project linting settings
 
