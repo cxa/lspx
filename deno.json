@@ -1,7 +1,7 @@
 {
   "name": "@frontside/lspx",
   "tasks": {
-    "dev": "deno run --allow-env --allow-run main.ts",
+    "dev": "deno -A jsr:@effection-contrib/watch deno task compile",
     "test": "deno test -A",
     "compile": "deno compile -o lspx --allow-env --allow-run main.ts"
   },
