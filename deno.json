@@ -1,11 +1,11 @@
 {
   "name": "@frontside/lspx",
-  "version": "0.1.0",
   "license": "MIT",
   "tasks": {
     "dev": "deno -A jsr:@effection-contrib/watch deno task compile",
     "test": "deno test -A",
-    "compile": "deno compile -o lspx --allow-env --allow-run main.ts"
+    "compile": "deno compile -o lspx --allow-env --allow-run main.ts",
+    "build:jsr": "deno -A tasks/build-jsr.ts"
   },
   "imports": {
     "@effection-contrib/test-adapter": "jsr:@effection-contrib/test-adapter@^0.1.0",
