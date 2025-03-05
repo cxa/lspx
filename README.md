@@ -56,7 +56,7 @@ lspx --lsp "deno lsp" --lsp "tailwindcss-language-server" --interactive
 lspx
 |
 +-> deno lsp
-+-> @tailwindcss/language-server
++-> tailwindcss-language-server
 
 LSP> initialize({ "capabilities": {} })
 ```
