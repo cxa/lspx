@@ -31,9 +31,10 @@ describe("lspx", function () {
       expect(response).toBeErr("server not initialized");
     });
 
-    it("does not allow initialize to be sent more than once");
-
-    it("forwards the initialized notification to all connected servers");
+    it("does not allow initialize to be sent more than once", function*() {
+      yield* request("initialize", { capabilities: {} });
+      expect(yield* request("initialize", { capabilities: {} })).toBeErr("initialize invoked twice");
+    });
 
     it("merges capabilities from all servers");
   });
