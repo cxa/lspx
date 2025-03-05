@@ -1,6 +1,7 @@
 {
   "name": "@frontside/lspx",
   "version": "0.1.0",
+  "license": "MIT",
   "tasks": {
     "dev": "deno -A jsr:@effection-contrib/watch deno task compile",
     "test": "deno test -A",
