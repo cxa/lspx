@@ -149,8 +149,9 @@ function ensureInitialized(): Middleware<RequestParams, unknown> {
         "server not initialized",
       );
     } else {
+      let result = yield* next(request);
       initialized = true;
-      return yield* next(request);
+      return result;
     }
   };
 }

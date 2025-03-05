@@ -38,6 +38,20 @@ describe("lspx", function () {
       );
     });
 
+    it("forwards requests after initalization", function* () {
+      let result = yield* request("initialize", { capabilities: {} });
+      expect(result).toBeOk();
+      expect(result).toMatchObject({
+        value: {
+          capabilities: {
+            hoverProvider: true,
+          },
+        },
+      });
+    });
+  });
+
+  describe("capabilities", () => {
     it("merges capabilities from all servers");
   });
 

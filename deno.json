@@ -1,5 +1,6 @@
 {
   "name": "@frontside/lspx",
+  "version": "0.1.0",
   "tasks": {
     "dev": "deno -A jsr:@effection-contrib/watch deno task compile",
     "test": "deno test -A",
@@ -16,7 +17,10 @@
     "zod": "npm:zod@^3.24.2",
     "zod-opts": "npm:zod-opts@^0.1.8"
   },
-  "exports": "./mod.ts",
+  "exports": {
+    ".": "./main.ts",
+    "./server": "./mod.ts"
+  },
   "lint": {
     "rules": {
       "exclude": ["prefer-const", "require-yield"]

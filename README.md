@@ -37,7 +37,7 @@ that each IDE only needs to interact with a single LSP connection.
 To run the three language servers above in unison:
 
 ```
-lspx --lsp "typescript-language-server --stdio" --lsp "tailwindcss-intellisense" --lsp "eslint-lsp --stdio"
+lspx --lsp "typescript-language-server --stdio" --lsp "tailwindcss-language-server --stdio" --lsp "eslint-lsp --stdio"
 ```
 
 ## supervisor
@@ -51,12 +51,12 @@ restart them if they fail. How many times and at what interval is configurable.
 responses
 
 ```
-lspx --lsp "deno lsp" --lsp "tailwindcss-intellisense"
+lspx --lsp "deno lsp" --lsp "tailwindcss-language-server" --interactive
 
 lspx
 |
 +-> deno lsp
-+-> tailwindcss-intellisense
++-> @tailwindcss/language-server
 
 LSP> initialize({ "capabilities": {} })
 ```
