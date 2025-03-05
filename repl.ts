@@ -3,6 +3,7 @@ import { readline } from "./readline.ts";
 import process from "node:process";
 import completions from "./completions.json" with { type: "json" };
 import { each, spawn } from "effection";
+import { useCancellationToken } from "./cancellation-token.ts";
 
 export function* repl(server: LSPXServer) {
   yield* spawn(function* () {
@@ -29,13 +30,17 @@ export function* repl(server: LSPXServer) {
     let match = pattern.exec(line);
     if (match) {
       try {
-        const method = match[1];
-        let params = JSON.parse(`[${match[2]}]`);
+        let method = match[1];
+        let args = JSON.parse(`[${match[2]}]`) as unknown[];
         console.log(
-          `Sending request ${method} with params ${JSON.stringify(params)}...`,
+          `Sending request ${method} with params ${JSON.stringify(args)}...`,
         );
 
-        let response = yield* server.request(method, ...params);
+        let params = args.length === 1 ? args[0] : args;
+
+        let token = yield* useCancellationToken();
+
+        let response = yield* server.request(method, params as object, token);
 
         console.log(JSON.stringify(response, null, 2));
       } catch (e) {

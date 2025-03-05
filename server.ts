@@ -1,24 +1,43 @@
-import { call, createSignal, type Operation, resource } from "effection";
-import type { Disposable, LSPXServer, Notification } from "./types.ts";
+import {
+  call,
+  createSignal,
+  type Operation,
+  resource,
+  useScope,
+} from "effection";
+import type {
+  Disposable,
+  LSPXServer,
+  Notification,
+  RequestParams,
+} from "./types.ts";
 
-import { useCommand } from "./use-command.ts";
+import { useCommand, useDaemon } from "./use-command.ts";
 import { useConnection } from "./json-rpc-connection.ts";
-import type { MessageConnection } from "vscode-jsonrpc";
+import {
+  ErrorCodes,
+  type MessageConnection,
+  ResponseError,
+  type StarRequestHandler,
+} from "vscode-jsonrpc";
 
-export interface Options {
-  interactive: boolean;
+export interface LSPXOptions {
+  interactive?: boolean;
+  input?: ReadableStream<Uint8Array>;
+  output?: WritableStream<Uint8Array>;
   commands: string[];
 }
 
-export function start(opts: Options): Operation<LSPXServer> {
+export function start(opts: LSPXOptions): Operation<LSPXServer> {
   return resource(function* (provide) {
     let notifications = createSignal<Notification, never>();
     let connections: MessageConnection[] = [];
     let disposables: Disposable[] = [];
+
     try {
       for (let command of opts.commands) {
         let [exe, ...args] = command.split(/\s/g);
-        let process = yield* useCommand(exe, {
+        let process = yield* useDaemon(exe, {
           args,
           stdin: "piped",
           stdout: "piped",
@@ -36,14 +55,28 @@ export function start(opts: Options): Operation<LSPXServer> {
           ),
         );
       }
+
+      let client = yield* useConnection({
+        read: opts.input ?? ReadableStream.from([]),
+        write: opts.output ?? new WritableStream(),
+      });
+
+      let scope = yield* useScope();
+      let dispatch = createDispatch(connections);
+
+      let handler: StarRequestHandler = (...params) =>
+        scope.run(() => dispatch(...params));
+
+      disposables.push(client.onRequest(handler));
+
       yield* provide({
         notifications,
-        *request<T>(method: string, ...params: unknown[]) {
-          for (let connection of connections) {
-            return (yield* call(() =>
-              connection.sendRequest(method, ...params)
-            )) as T;
+        *request<T>(...params: RequestParams): Operation<T> {
+          const result = yield* dispatch<T, unknown>(...params);
+          if (result instanceof ResponseError) {
+            throw result;
           }
+          return result;
         },
       });
     } finally {
@@ -52,4 +85,18 @@ export function start(opts: Options): Operation<LSPXServer> {
       }
     }
   });
+}
+
+function createDispatch(
+  connections: MessageConnection[],
+): <T, E>(...params: RequestParams) => Operation<T | ResponseError<E>> {
+  return function* dispatch(...params) {
+    for (let connection of connections) {
+      return (yield* call(() => connection.sendRequest(...params)));
+    }
+    return new ResponseError(
+      ErrorCodes.ServerNotInitialized,
+      `no active server connections`,
+    );
+  };
 }

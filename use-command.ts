@@ -1,4 +1,4 @@
-import { call, type Operation, resource } from "effection";
+import { call, type Operation, resource, spawn } from "effection";
 
 export function useCommand(
   ...params: ConstructorParameters<typeof Deno.Command>
@@ -19,4 +19,23 @@ export function useCommand(
       yield* call(() => process.status);
     }
   });
+}
+
+export function* useDaemon(
+  ...params: Parameters<typeof useCommand>
+): Operation<Deno.ChildProcess> {
+  let process = yield* useCommand(...params);
+
+  yield* spawn(function* () {
+    let status = yield* call(() => process.status);
+    let [command, options] = params;
+    let error = new Error(
+      `${command}${options?.args ? " " + options.args.join(" ") : ""}`,
+      { cause: status },
+    );
+    error.name = `DaemonExitError`;
+    throw error;
+  });
+
+  return process;
 }

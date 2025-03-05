@@ -6,8 +6,10 @@
     "jsr:@kuuote/lsp-stream@*": "3.0.0",
     "jsr:@std/assert@1": "1.0.11",
     "jsr:@std/assert@^1.0.10": "1.0.11",
+    "jsr:@std/assert@^1.0.11": "1.0.11",
     "jsr:@std/bytes@0.222.1": "0.222.1",
     "jsr:@std/data-structures@^1.0.6": "1.0.6",
+    "jsr:@std/expect@^1.0.13": "1.0.13",
     "jsr:@std/fs@^1.0.9": "1.0.13",
     "jsr:@std/internal@^1.0.5": "1.0.5",
     "jsr:@std/json@*": "1.0.1",
@@ -17,6 +19,7 @@
     "npm:@types/node@*": "22.5.4",
     "npm:effection@4.0.0-alpha.5": "4.0.0-alpha.5",
     "npm:vscode-jsonrpc@^8.2.1": "8.2.1",
+    "npm:vscode-languageserver-protocol@^3.17.5": "3.17.5",
     "npm:zod-opts@~0.1.8": "0.1.8",
     "npm:zod@^3.24.2": "3.24.2"
   },
@@ -47,6 +50,13 @@
     },
     "@std/data-structures@1.0.6": {
       "integrity": "76a7fd8080c66604c0496220a791860492ab21a04a63a969c0b9a0609bbbb760"
+    },
+    "@std/expect@1.0.13": {
+      "integrity": "d8e236c7089cd9fcf5e6032f27dadc3db6349d0aee48c15bc71d717bca5baa42",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.11",
+        "jsr:@std/internal"
+      ]
     },
     "@std/fs@1.0.13": {
       "integrity": "756d3ff0ade91c9e72b228e8012b6ff00c3d4a4ac9c642c4dac083536bf6c605",
@@ -93,8 +103,21 @@
     "undici-types@6.19.8": {
       "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
     },
+    "vscode-jsonrpc@8.2.0": {
+      "integrity": "sha512-C+r0eKJUIfiDIfwJhria30+TYWPtuHJXHtI7J0YlOmKAo7ogxP20T0zxB7HZQIFhIyvoBPwWskjxrvAtfjyZfA=="
+    },
     "vscode-jsonrpc@8.2.1": {
       "integrity": "sha512-kdjOSJ2lLIn7r1rtrMbbNCHjyMPfRnowdKjBQ+mGq6NAW5QY2bEZC/khaC5OR8svbbjvLEaIXkOq45e2X9BIbQ=="
+    },
+    "vscode-languageserver-protocol@3.17.5": {
+      "integrity": "sha512-mb1bvRJN8SVznADSGWM9u/b07H7Ecg0I3OgXDuLdn307rl/J3A9YD6/eYOssqhecL27hK1IPZAsaqh00i/Jljg==",
+      "dependencies": [
+        "vscode-jsonrpc@8.2.0",
+        "vscode-languageserver-types"
+      ]
+    },
+    "vscode-languageserver-types@3.17.5": {
+      "integrity": "sha512-Ld1VelNuX9pdF39h2Hgaeb5hEZM2Z3jUrrMgWQAu82jMtZp7p3vJT3BzToKtZI7NgQssZje5o0zryOrhQvzQAg=="
     },
     "zod-opts@0.1.8": {
       "integrity": "sha512-YZhdEcIL3D2W9fXCCf/UBgrBS90c8w25RTteh5GihGIZzadYr/qIFxyM2L98zHUkZ2S8MMxwn3ny8fzPNnvPlg==",
@@ -111,8 +134,10 @@
       "jsr:@effection-contrib/test-adapter@0.1",
       "jsr:@effection/effection@^4.0.0-alpha.7",
       "jsr:@std/assert@1",
+      "jsr:@std/expect@^1.0.13",
       "jsr:@std/testing@^1.0.9",
       "npm:vscode-jsonrpc@^8.2.1",
+      "npm:vscode-languageserver-protocol@^3.17.5",
       "npm:zod-opts@~0.1.8",
       "npm:zod@^3.24.2"
     ]
