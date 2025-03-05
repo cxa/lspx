@@ -1,6 +1,6 @@
 import type { Operation } from "effection";
 import { main, suspend, useScope } from "effection";
-import { useConnection } from "../../json-rpc-connection.ts";
+import { useConnection } from "../../lib/json-rpc-connection.ts";
 import type {
   InitializeParams,
   InitializeResult,

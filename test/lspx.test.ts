@@ -6,12 +6,12 @@ import {
   type Operation,
   type Result,
 } from "effection";
-import { type LSPXOptions, start } from "../server.ts";
+import { type LSPXOptions, start } from "../mod.ts";
 import { beforeEach, describe, expect, it } from "./bdd.ts";
 import {
   type MessageConnection,
   useConnection,
-} from "../json-rpc-connection.ts";
+} from "../lib/json-rpc-connection.ts";
 import { useStreamPair } from "./stream-pair.ts";
 
 describe("lspx", function () {
@@ -31,22 +31,24 @@ describe("lspx", function () {
       expect(response).toBeErr("server not initialized");
     });
 
-    it("does not allow initialize to be sent more than once", function*() {
+    it("does not allow initialize to be sent more than once", function* () {
       yield* request("initialize", { capabilities: {} });
-      expect(yield* request("initialize", { capabilities: {} })).toBeErr("initialize invoked twice");
+      expect(yield* request("initialize", { capabilities: {} })).toBeErr(
+        "initialize invoked twice",
+      );
     });
 
     it("merges capabilities from all servers");
   });
 
-  describe("client/registerCapability", () => {
-    it("always forwards dynamic registrations requests to the client");
-    it("always forwards dynamic unregistrations requests to the client");
-  });
-
   describe("shutdown and exit", () => {
     it("forwards the shutdown request to all sub servers");
     it("forwars the exit request to all subservers and then exits itself");
+  });
+
+  describe("client/registerCapability", () => {
+    it("always forwards dynamic registrations requests to the client");
+    it("always forwards dynamic unregistrations requests to the client");
   });
 
   it(

@@ -2,8 +2,8 @@ import { exit, main } from "effection";
 
 import * as z from "zod";
 import { parser } from "zod-opts";
-import { start } from "./server.ts";
-import { repl } from "./repl.ts";
+import { start } from "./lib/server.ts";
+import { repl } from "./lib/repl.ts";
 
 await main(function* (argv) {
   let opts = parser()
