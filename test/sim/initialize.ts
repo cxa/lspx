@@ -13,6 +13,7 @@ await main(function* () {
     write: Deno.stdout.writable,
   });
 
+  // deno-lint-ignore no-explicit-any
   const routes: Record<string, (...params: any[]) => Operation<any>> = {
     *initialize(_params: InitializeParams): Operation<InitializeResult> {
       return {

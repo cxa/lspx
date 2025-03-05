@@ -24,11 +24,11 @@ describe("lspx", function () {
       });
     });
 
-    it.only("returns an error code: -32002 if a request is made before initialize", function* () {
+    it("returns an error code: -32002 if a request is made before initialize", function* () {
       let response = yield* request("textDocument/didOpen", {
         textDocument: {},
       });
-      expect(response).toBeErr("not initialized");
+      expect(response).toBeErr("server not initialized");
     });
 
     it("does not allow initialize to be sent more than once");

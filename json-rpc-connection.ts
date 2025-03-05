@@ -1,5 +1,5 @@
 import { Readable, Writable } from "node:stream";
-import { type Operation, resource } from "effection";
+import { type Operation, resource, useAbortSignal } from "effection";
 import * as rpc from "vscode-jsonrpc/node.js";
 
 export type { MessageConnection } from "vscode-jsonrpc";
@@ -13,15 +13,24 @@ export function useConnection(
   options: JSONRPCConnectionOptions,
 ): Operation<rpc.MessageConnection> {
   return resource(function* (provide) {
-    let connection = rpc.createMessageConnection(
+    let signal = yield* useAbortSignal();
+
+    let readable = new rpc.StreamMessageReader(
       //@ts-expect-error 🤷
-      new rpc.StreamMessageReader(Readable.fromWeb(options.read)),
-      new rpc.StreamMessageWriter(Writable.fromWeb(options.write)),
+      Readable.fromWeb(options.read, { signal }),
     );
+    let writable = new rpc.StreamMessageWriter(
+      Writable.fromWeb(options.write, { signal }),
+    );
+
+    let connection = rpc.createMessageConnection(readable, writable);
+
     connection.listen();
     try {
       yield* provide(connection);
     } finally {
+      readable.dispose();
+      writable.dispose();
       connection.dispose();
     }
   });

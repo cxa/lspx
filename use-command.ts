@@ -17,6 +17,9 @@ export function useCommand(
     } finally {
       controller.abort();
       yield* call(() => process.status);
+      if (options?.stderr === "piped") {
+        process.stderr.cancel();
+      }
     }
   });
 }
