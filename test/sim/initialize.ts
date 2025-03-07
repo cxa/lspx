@@ -1,11 +1,6 @@
-import type { Operation } from "effection";
-import { main, suspend, useScope } from "effection";
+import { each, main } from "effection";
 import { useConnection } from "../../lib/json-rpc-connection.ts";
-import type {
-  InitializeParams,
-  InitializeResult,
-} from "vscode-languageserver-protocol";
-import { ErrorCodes, ResponseError } from "vscode-jsonrpc";
+import { constant } from "https://jsr.io/@effection/effection/4.0.0-alpha.7/lib/constant.ts";
 
 await main(function* () {
   let client = yield* useConnection({
@@ -13,10 +8,9 @@ await main(function* () {
     write: Deno.stdout.writable,
   });
 
-  // deno-lint-ignore no-explicit-any
-  const routes: Record<string, (...params: any[]) => Operation<any>> = {
-    *initialize(_params: InitializeParams): Operation<InitializeResult> {
-      return {
+  for (let respond of yield* each(client.requests)) {
+    yield* respond(() =>
+      constant({
         capabilities: {
           hoverProvider: true,
         },
@@ -24,26 +18,8 @@ await main(function* () {
           name: "lspx simulator",
           version: "1.0",
         },
-      };
-    },
-  };
-
-  let scope = yield* useScope();
-  let disposable = client.onRequest((method, params) => {
-    let operation = routes[method];
-    if (operation) {
-      return scope.run(() => operation(...[params].flat()));
-    } else {
-      return new ResponseError(
-        ErrorCodes.InvalidRequest,
-        `does not implement ${method}`,
-      );
-    }
-  });
-
-  try {
-    yield* suspend();
-  } finally {
-    disposable.dispose();
+      })
+    );
+    yield* each.next();
   }
 });

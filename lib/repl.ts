@@ -1,14 +1,14 @@
-import type { LSPXServer } from "./types.ts";
+import type { RPCEndpoint } from "./types.ts";
 import { readline } from "./readline.ts";
 import process from "node:process";
 import completions from "./completions.json" with { type: "json" };
 import { each, spawn } from "effection";
 import { useCancellationToken } from "./cancellation-token.ts";
 
-export function* repl(server: LSPXServer) {
+export function* repl(server: RPCEndpoint) {
   yield* spawn(function* () {
     for (let notification of yield* each(server.notifications)) {
-      let { method, params } = notification;
+      let [method, params] = notification;
       console.log(`Notification: ${method} ${JSON.stringify(params, null, 2)}`);
       yield* each.next();
     }
@@ -31,16 +31,14 @@ export function* repl(server: LSPXServer) {
     if (match) {
       try {
         let method = match[1];
-        let args = JSON.parse(`[${match[2]}]`) as unknown[];
+        let args = JSON.parse(`[${match[2]}]`) as any[];
         console.log(
           `Sending request ${method} with params ${JSON.stringify(args)}...`,
         );
 
-        let params = args.length === 1 ? args[0] : args;
-
         let token = yield* useCancellationToken();
 
-        let response = yield* server.request(method, params as object, token);
+        let response = yield* server.request([method, args, token]);
 
         console.log(JSON.stringify(response, null, 2));
       } catch (e) {

@@ -49,6 +49,7 @@ it.only = (name: string, body: ItBody) => {
     return this["@effectionx/test-adapter"].runTest(body);
   });
 };
+it.skip = (name: string, body: ItBody) => bdd.it.skip(name, () => {});
 
 import { type Async, expect as $expect, type Expected } from "@std/expect";
 import type { Result } from "effection";

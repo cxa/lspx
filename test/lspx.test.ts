@@ -1,18 +1,15 @@
-import {
-  call,
-  createContext,
-  Err,
-  Ok,
-  type Operation,
-  type Result,
-} from "effection";
+import { createContext, Err, Ok, type Operation, type Result } from "effection";
 import { type LSPXOptions, start } from "../mod.ts";
 import { beforeEach, describe, expect, it } from "./bdd.ts";
-import {
-  type MessageConnection,
-  useConnection,
-} from "../lib/json-rpc-connection.ts";
+import { useConnection } from "../lib/json-rpc-connection.ts";
 import { useStreamPair } from "./stream-pair.ts";
+import type {
+  InitializeResult,
+  ServerCapabilities,
+} from "vscode-languageserver-protocol";
+import type { RPCEndpoint } from "../lib/types.ts";
+
+import { useCancellationToken } from "../lib/cancellation-token.ts";
 
 describe("lspx", function () {
   describe("initialization", () => {
@@ -51,7 +48,27 @@ describe("lspx", function () {
     });
   });
 
-  describe("capabilities", () => {
+  describe("completion capabilities", () => {
+    it.skip("merges completion capabilities", function* () {
+      yield* initServer({
+        commands: [
+          "deno -A test/sim/completion.ts --triggers a,b,c",
+          "deno -A test/sim/completion.ts --triggers x,y,z",
+        ],
+      });
+      expect(yield* capabilities()).toMatchObject({
+        "completionProvider": {
+          "triggerCharacters": [
+            "a",
+            "b",
+            "c",
+            "x",
+            "y",
+            "z",
+          ],
+        },
+      });
+    });
     it("merges capabilities from all servers");
   });
 
@@ -78,7 +95,7 @@ describe("lspx", function () {
   });
 });
 
-const Connection = createContext<MessageConnection>("lspx");
+const Connection = createContext<RPCEndpoint>("lspx");
 
 export function* initServer(options: LSPXOptions): Operation<void> {
   let input = yield* useStreamPair<Uint8Array>();
@@ -99,14 +116,29 @@ export function* initServer(options: LSPXOptions): Operation<void> {
   yield* Connection.set(connection);
 }
 
+export function* capabilities(): Operation<ServerCapabilities> {
+  let { capabilities } = unbox(
+    yield* request<InitializeResult>("initialize", {}),
+  );
+  return capabilities;
+}
+
+export function unbox<T>(result: Result<T>): T {
+  if (result.ok) {
+    return result.value;
+  } else {
+    throw result.error;
+  }
+}
+
 export function* request<T>(
   method: string,
-  params: unknown,
+  params: object,
 ): Operation<Result<T>> {
   let connection = yield* Connection.expect();
-
+  let token = yield* useCancellationToken();
   try {
-    return Ok(yield* call(() => connection.sendRequest(method, params)));
+    return Ok(yield* connection.request([method, params, token]));
   } catch (error) {
     return Err(error as Error);
   }

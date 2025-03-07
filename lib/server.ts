@@ -1,31 +1,9 @@
-import {
-  call,
-  createContext,
-  createSignal,
-  ensure,
-  type Operation,
-  race,
-  resource,
-  suspend,
-  useScope,
-  withResolvers,
-} from "effection";
-import type {
-  Disposable,
-  LSPXServer,
-  Notification,
-  RequestParams,
-} from "./types.ts";
+import { each, type Operation, resource, spawn } from "effection";
+import type { RPCEndpoint } from "./types.ts";
 
 import { useDaemon } from "./use-command.ts";
 import { useConnection } from "./json-rpc-connection.ts";
-import {
-  ErrorCodes,
-  type MessageConnection,
-  ResponseError,
-  type StarRequestHandler,
-} from "vscode-jsonrpc";
-import { concat, type Middleware } from "./middleware.ts";
+import { useMultiplexer } from "./multiplexer.ts";
 
 export interface LSPXOptions {
   interactive?: boolean;
@@ -34,11 +12,9 @@ export interface LSPXOptions {
   commands: string[];
 }
 
-export function start(opts: LSPXOptions): Operation<LSPXServer> {
+export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
   return resource(function* (provide) {
-    let notifications = createSignal<Notification, never>();
-    let connections: MessageConnection[] = [];
-    let disposables: Disposable[] = [];
+    let servers: RPCEndpoint[] = [];
 
     for (let command of opts.commands) {
       let [exe, ...args] = command.split(/\s/g);
@@ -46,129 +22,50 @@ export function start(opts: LSPXOptions): Operation<LSPXServer> {
         args,
         stdin: "piped",
         stdout: "piped",
-        stderr: "piped",
+        stderr: "inherit",
       });
-      let connection = yield* useConnection({
+      let server = yield* useConnection({
         read: process.stdout,
         write: process.stdin,
       });
-      connections.push(connection);
-      disposables.push(connection);
-      disposables.push(
-        connection.onNotification((method, params) =>
-          notifications.send({ method, params })
-        ),
-      );
+      servers.push(server);
     }
+
+    let multiplexer = yield* useMultiplexer({ servers });
 
     let client = yield* useConnection({
       read: opts.input ?? ReadableStream.from([]),
       write: opts.output ?? new WritableStream(),
     });
 
-    let scope = yield* useScope();
-    let dispatch = createDispatch(connections);
-
-    let handler: StarRequestHandler = (...params) =>
-      scope.run(() => dispatch(...params));
-
-    disposables.push(client.onRequest(handler));
-
-    yield* ensure(() => {
-      for (let disposable of disposables) {
-        disposable.dispose();
+    yield* spawn(function* () {
+      for (let notification of yield* each(multiplexer.notifications)) {
+        yield* client.notify(notification);
+        yield* each.next();
       }
     });
 
-    yield* provide({
-      notifications,
-      *request<T>(...params: RequestParams): Operation<T> {
-        const result = yield* dispatch<T, unknown>(...params);
-        if (result instanceof ResponseError) {
-          throw result;
-        }
-        return result;
-      },
+    yield* spawn(function* () {
+      for (let respondWith of yield* each(multiplexer.requests)) {
+        yield* respondWith(client.request);
+        yield* each.next();
+      }
     });
+
+    yield* spawn(function* () {
+      for (let respondWith of yield* each(client.requests)) {
+        yield* respondWith(multiplexer.request);
+        yield* each.next();
+      }
+    });
+
+    yield* spawn(function* () {
+      for (let notification of yield* each(client.notifications)) {
+        yield* multiplexer.notify(notification);
+        yield* each.next();
+      }
+    });
+
+    yield* provide(multiplexer);
   });
-}
-
-const ResponseErrorContext = createContext<
-  <T>(error: ResponseError<T>) => void
->("lspx.responseError");
-
-function createDispatch(
-  connections: MessageConnection[],
-): <T, E>(...params: RequestParams) => Operation<T | ResponseError<E>> {
-  let middleware: Middleware<RequestParams, unknown> = concat(
-    ensureInitialized(),
-    multiplex(connections),
-  );
-
-  return function* dispatch<T, E>(
-    ...params: RequestParams
-  ): Operation<T | ResponseError<E>> {
-    let { operation: errored, resolve: raise } = withResolvers<
-      ResponseError<unknown>
-    >();
-    yield* ResponseErrorContext.set(raise);
-
-    return yield* race([
-      errored as Operation<ResponseError<E>>,
-      middleware(
-        params,
-        () => responseError(ErrorCodes.InternalError, "unhandled request"),
-      ) as Operation<T>,
-    ]);
-  };
-}
-
-function* responseError<T = void>(
-  ...args: ConstructorParameters<typeof ResponseError<T>>
-  // deno-lint-ignore no-explicit-any
-): Operation<any> {
-  let raise = yield* ResponseErrorContext.expect();
-
-  raise<T>(new ResponseError(...args));
-
-  yield* suspend();
-}
-
-function ensureInitialized(): Middleware<RequestParams, unknown> {
-  let initialized = false;
-  return function* (request, next) {
-    let [method] = request;
-    if (initialized && method === "initialize") {
-      return yield* responseError(
-        ErrorCodes.InvalidRequest,
-        "initialize invoked twice",
-      );
-    } else if (!initialized && method !== "initialize") {
-      return yield* responseError(
-        ErrorCodes.ServerNotInitialized,
-        "server not initialized",
-      );
-    } else {
-      let result = yield* next(request);
-      initialized = true;
-      return result;
-    }
-  };
-}
-
-function multiplex(
-  connections: MessageConnection[],
-): Middleware<RequestParams, unknown> {
-  let [connection] = connections;
-
-  return function* (params) {
-    if (!connection) {
-      return yield* responseError(
-        ErrorCodes.InternalError,
-        "lspx is not connected to any language servers",
-      );
-    } else {
-      return yield* call(() => connection.sendRequest(...params));
-    }
-  };
 }
