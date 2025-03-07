@@ -11,6 +11,7 @@ import type {
 import { ErrorCodes } from "vscode-jsonrpc";
 import type { InitializeResult } from "vscode-languageserver-protocol";
 import { responseError } from "./json-rpc-connection.ts";
+import * as merge from "./merge.ts";
 
 export interface MultiplexerOptions {
   servers: RPCEndpoint[];
@@ -25,6 +26,7 @@ export function useMultiplexer(
     let notifications = createChannel<NotificationParams>();
     let requests = createChannel<LSPServerRequest>();
 
+    // forward all notifications and requests from server -> client
     for (let server of servers) {
       yield* spawn(function* () {
         for (let notification of yield* each(server.notifications)) {
@@ -41,6 +43,7 @@ export function useMultiplexer(
       });
     }
 
+    // delegate notifications and requests from client -> server to current state
     let states = createChannel<State, never>();
     let state = uninitialized(servers, states.send);
 
@@ -61,7 +64,7 @@ export function useMultiplexer(
   });
 }
 
-interface State {
+export interface State {
   notify: RPCEndpoint["notify"];
   request: RPCEndpoint["request"];
 }
@@ -96,7 +99,7 @@ function uninitialized(
 
       yield* transition(initialized(agents));
 
-      return mergecapabilities(agents) as T;
+      return merge.capabilities(agents) as T;
     },
   };
 }
@@ -104,42 +107,27 @@ function uninitialized(
 function initialized(agents: LSPAgent[]): State {
   return {
     *notify(params) {
+      // TODO: only forward notifications to interested agents
       for (let agent of agents) {
         yield* agent.notify(params);
       }
     },
     *request(params) {
+      let [first] = agents;
       let [method] = params;
       if (method === "initialize") {
-        throw yield* responseError(
+        yield* responseError(
           ErrorCodes.InvalidRequest,
           `initialize invoked twice`,
         );
-      }
-      let [first] = agents;
-      if (first) {
-        return yield* first.request(params);
-      } else {
+      } else if (!first) {
         throw yield* responseError(
           ErrorCodes.InternalError,
           `no lsps to make requests`,
         );
       }
+
+      return yield* first.request(params);
     },
   };
-}
-
-function mergecapabilities(agents: LSPAgent[]): InitializeResult {
-  let [first] = agents;
-  if (first) {
-    return first.initialization;
-  } else {
-    return {
-      capabilities: {},
-      serverInfo: {
-        name: "lspx",
-        version: "0.1.0",
-      },
-    };
-  }
 }

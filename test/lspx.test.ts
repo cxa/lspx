@@ -49,11 +49,11 @@ describe("lspx", function () {
   });
 
   describe("completion capabilities", () => {
-    it.skip("merges completion capabilities", function* () {
+    it("merges completion capabilities", function* () {
       yield* initServer({
         commands: [
-          "deno -A test/sim/completion.ts --triggers a,b,c",
-          "deno -A test/sim/completion.ts --triggers x,y,z",
+          "deno -A test/sim/completion.ts --triggers a b c",
+          "deno -A test/sim/completion.ts --triggers x y z",
         ],
       });
       expect(yield* capabilities()).toMatchObject({

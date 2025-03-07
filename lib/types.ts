@@ -31,4 +31,3 @@ export interface LSPServerRequest {
 
 export type RequestParams = Parameters<StarRequestHandler>;
 export type NotificationParams = Parameters<StarNotificationHandler>;
-

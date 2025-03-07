@@ -17,6 +17,7 @@
     "jsr:@std/streams@^1.0.7": "1.0.9",
     "jsr:@std/testing@^1.0.9": "1.0.9",
     "npm:@types/node@*": "22.5.4",
+    "npm:deepmerge@^4.3.1": "4.3.1",
     "npm:effection@4.0.0-alpha.5": "4.0.0-alpha.5",
     "npm:vscode-jsonrpc@^8.2.1": "8.2.1",
     "npm:vscode-languageserver-protocol@^3.17.5": "3.17.5",
@@ -97,6 +98,9 @@
         "undici-types"
       ]
     },
+    "deepmerge@4.3.1": {
+      "integrity": "sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A=="
+    },
     "effection@4.0.0-alpha.5": {
       "integrity": "sha512-7s8dwQF8oqOxtsUrFMRQBUOWXq23Khb/IYurwqEnSTUwsgkSgQww/9A9aBwdRQ1hMmELouy/YkvhC7e9oGQfbA=="
     },
@@ -136,6 +140,7 @@
       "jsr:@std/assert@1",
       "jsr:@std/expect@^1.0.13",
       "jsr:@std/testing@^1.0.9",
+      "npm:deepmerge@^4.3.1",
       "npm:vscode-jsonrpc@^8.2.1",
       "npm:vscode-languageserver-protocol@^3.17.5",
       "npm:zod-opts@~0.1.8",
