@@ -31,7 +31,7 @@ export function* repl(server: RPCEndpoint) {
     if (match) {
       try {
         let method = match[1];
-        let args = JSON.parse(`[${match[2]}]`) as any[];
+        let args = JSON.parse(`[${match[2]}]`);
         console.log(
           `Sending request ${method} with params ${JSON.stringify(args)}...`,
         );
