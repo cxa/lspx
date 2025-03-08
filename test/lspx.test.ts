@@ -12,7 +12,7 @@ import type { RPCEndpoint } from "../lib/types.ts";
 import { useCancellationToken } from "../lib/cancellation-token.ts";
 
 describe("lspx", function () {
-  describe("initialization", () => {
+  describe("lifecycle", () => {
     beforeEach(function* () {
       yield* initServer({
         commands: [
@@ -59,13 +59,15 @@ describe("lspx", function () {
   });
 
   describe("completion", () => {
-    it("merges completion capabilities", function* () {
+    beforeEach(function* () {
       yield* initServer({
         commands: [
           "deno -A test/sim/completion.ts --triggers a b c",
           "deno -A test/sim/completion.ts --triggers x y z",
         ],
       });
+    });
+    it("merges completion capabilities", function* () {
       expect(yield* capabilities()).toMatchObject({
         "completionProvider": {
           "triggerCharacters": [
@@ -79,11 +81,10 @@ describe("lspx", function () {
         },
       });
     });
-  });
-
-  describe("shutdown and exit", () => {
-    it("forwards the shutdown request to all sub servers");
-    it("forwars the exit request to all subservers and then exits itself");
+    it("sends completion request to all servers when no trigger is apparent", function* () {
+    });
+    it("restricts request to those whose triggers were sprung when available", function* () {
+    });
   });
 
   describe("client/registerCapability", () => {
