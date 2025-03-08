@@ -1,4 +1,4 @@
-import { exit, main } from "effection";
+import { each, main } from "effection";
 
 import * as z from "zod";
 import { parser } from "zod-opts";
@@ -26,6 +26,11 @@ await main(function* (argv) {
   if (opts.interactive) {
     yield* repl(lspx);
   } else {
-    yield* exit(1, "non-interactive sessions not supported yet");
+    for (let [method] of yield* each(lspx.notifications)) {
+      if (method === "exit") {
+        break;
+      }
+      yield* each.next();
+    }
   }
 });

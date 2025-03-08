@@ -46,9 +46,19 @@ describe("lspx", function () {
         },
       });
     });
+
+    it("does not allow further requests after shutdown", function* () {
+      expect(yield* request("initialize", { capabilities: {} })).toBeOk();
+      expect(yield* request("shutdown", {})).toBeOk();
+      expect(
+        yield* request("textDocument/definition", {
+          position: { line: 0, character: 0 },
+        }),
+      ).toBeErr("server is shut down");
+    });
   });
 
-  describe("completion capabilities", () => {
+  describe("completion", () => {
     it("merges completion capabilities", function* () {
       yield* initServer({
         commands: [
@@ -69,7 +79,6 @@ describe("lspx", function () {
         },
       });
     });
-    it("merges capabilities from all servers");
   });
 
   describe("shutdown and exit", () => {
@@ -78,8 +87,8 @@ describe("lspx", function () {
   });
 
   describe("client/registerCapability", () => {
-    it("always forwards dynamic registrations requests to the client");
-    it("always forwards dynamic unregistrations requests to the client");
+    it("forwards dynamic registrations requests to the client");
+    it("forwards dynamic unregistrations requests to the client");
   });
 
   it(
@@ -87,11 +96,7 @@ describe("lspx", function () {
   );
 
   describe("notifications", () => {
-    it("forwards all notifications from client to server");
-  });
-
-  describe("by default", () => {
-    it("forwards all requests to every client");
+    it("forwards all notifications from all servers to the client");
   });
 });
 

@@ -97,14 +97,17 @@ function uninitialized(
         })
       ));
 
-      yield* transition(initialized(agents));
+      yield* transition(initialized(agents, transition));
 
       return merge.capabilities(agents) as T;
     },
   };
 }
 
-function initialized(agents: LSPAgent[]): State {
+function initialized(
+  agents: LSPAgent[],
+  transition: (state: State) => Operation<void>,
+): State {
   return {
     *notify(params) {
       // TODO: only forward notifications to interested agents
@@ -120,6 +123,12 @@ function initialized(agents: LSPAgent[]): State {
           ErrorCodes.InvalidRequest,
           `initialize invoked twice`,
         );
+      } else if (method === "shutdown") {
+        yield* transition(shutdown);
+        for (let agent of agents) {
+          yield* agent.request(params);
+        }
+        return cast(null);
       } else if (!first) {
         throw yield* responseError(
           ErrorCodes.InternalError,
@@ -131,3 +140,15 @@ function initialized(agents: LSPAgent[]): State {
     },
   };
 }
+
+const shutdown: State = {
+  *notify() {},
+  *request() {
+    return yield* responseError(
+      ErrorCodes.InvalidRequest,
+      `server is shut down`,
+    );
+  },
+};
+
+const cast = <T>(value: unknown) => value as T;
