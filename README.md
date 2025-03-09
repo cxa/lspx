@@ -22,10 +22,10 @@ combination of the following:
 - _eslint_ (ts) highlight warnings and errors based on project linting settings
 
 In order to provide this union of functionality, IDEs like VSCode must manage
-four separate language server processes and then handle the dispatch and
+three separate language server processes and then handle the dispatch and
 synchronization of all edits and user inputs to each one. What this means in
 practice is that in the example above, if you hover over a symbol, that hover
-should be sent to each of the typescript, tailwind, htmx, and eslint servers.
+should be sent to each of the typescript, tailwind, and eslint servers.
 Then any hints, overlays that any of them have should be collated and displayed
 at that point. This is a complex process, and furthermore it is required that it
 be duplicated inside every single IDE that wants to use more than one language
