@@ -21,11 +21,13 @@ await main(function* (argv) {
       },
     }).parse(argv);
 
-  let lspx = yield* start({ ...opts, commands: opts.lsp });
-
   if (opts.interactive) {
-    yield* repl(lspx);
+    let lspx = yield* start({ ...opts, commands: opts.lsp });
+    yield* repl(lspx, opts.lsp);
   } else {
+    let input = Deno.stdin.readable;
+    let output = Deno.stdout.writable;
+    let lspx = yield* start({ input, output, ...opts, commands: opts.lsp });
     for (let [method] of yield* each(lspx.notifications)) {
       if (method === "exit") {
         break;

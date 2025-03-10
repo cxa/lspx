@@ -22,7 +22,7 @@ export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
         args,
         stdin: "piped",
         stdout: "piped",
-        stderr: "inherit",
+        stderr: "piped",
       });
       let server = yield* useConnection({
         read: process.stdout,
@@ -34,7 +34,7 @@ export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
     let multiplexer = yield* useMultiplexer({ servers });
 
     let client = yield* useConnection({
-      read: opts.input ?? ReadableStream.from([]),
+      read: opts.input ?? new ReadableStream(),
       write: opts.output ?? new WritableStream(),
     });
 

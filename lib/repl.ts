@@ -2,18 +2,10 @@ import type { RPCEndpoint } from "./types.ts";
 import { readline } from "./readline.ts";
 import process from "node:process";
 import completions from "./completions.json" with { type: "json" };
-import { each, spawn } from "effection";
+import { each } from "effection";
 import { useCancellationToken } from "./cancellation-token.ts";
 
-export function* repl(server: RPCEndpoint) {
-  yield* spawn(function* () {
-    for (let notification of yield* each(server.notifications)) {
-      let [method, params] = notification;
-      console.log(`Notification: ${method} ${JSON.stringify(params, null, 2)}`);
-      yield* each.next();
-    }
-  });
-
+export function* repl(server: RPCEndpoint, commands: string[]) {
   let lines = readline({
     prompt: "LSP> ",
     input: process.stdin,
@@ -24,6 +16,12 @@ export function* repl(server: RPCEndpoint) {
       return [hits.length ? hits : completions, line];
     },
   });
+
+  if (commands.length) {
+    console.log(`x
+|
+${commands.map((c) => `+-> ${c}`).join("\n")}`);
+  }
 
   for (let line of yield* each(lines)) {
     let pattern = /([\w\/]+)\((.*)\)/;
@@ -38,7 +36,9 @@ export function* repl(server: RPCEndpoint) {
 
         let token = yield* useCancellationToken();
 
-        let response = yield* server.request([method, args, token]);
+        let arg = args.length === 1 ? args[0] : args;
+
+        let response = yield* server.request([method, arg, token]);
 
         console.log(JSON.stringify(response, null, 2));
       } catch (e) {
