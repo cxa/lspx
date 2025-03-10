@@ -2,7 +2,7 @@ import { all, type Operation } from "effection";
 import type { LSPAgent, NotificationParams, RequestParams } from "./types.ts";
 import deepmerge from "deepmerge";
 import { get, optic } from "optics-ts";
-import { request2capability } from "./capabilities.ts";
+import { method2capability } from "./capabilities.ts";
 import { responseError } from "./json-rpc-connection.ts";
 import {
   type CompletionParams,
@@ -37,9 +37,7 @@ export function* request(options: RequestOptions): Operation<unknown> {
     handler.agents.map((agent) => agent.request(params)),
   );
 
-  let merge = handler.merge ??
-    ((responses) =>
-      responses.reduce((sum, response) => deepmerge(sum, response)));
+  let merge = handler.merge ?? defaultMerge;
 
   return merge(responses);
 }
@@ -63,7 +61,7 @@ export function* notification(options: NotificationOptions): Operation<void> {
 }
 
 export function match(agents: LSPAgent[], params: RequestParams): Match {
-  let method = params[0] as keyof typeof request2capability;
+  let method = params[0] as keyof typeof method2capability;
   switch (method) {
     case "textDocument/completion":
       return completion({ agents, params });
@@ -110,10 +108,27 @@ interface Match {
  */
 function defaultMatch(canddidates: LSPAgent[], method: string): Match {
   let capabilityPath =
-    request2capability[method as keyof typeof request2capability];
+    method2capability[method as keyof typeof method2capability];
+  if (capabilityPath === "*") {
+    return { agents: canddidates };
+  }
+  if (!capabilityPath) {
+    console.error(`nothing matches ${method}`);
+    return { agents: canddidates };
+  }
   let path = optic().path(capabilityPath);
   let agents = canddidates.filter((agent) => {
     return !!get(path)(agent.capabilities);
   });
   return { agents };
+}
+
+function defaultMerge(responses: unknown[]): unknown {
+  return responses.reduce((sum, response) => {
+    if (response === null) {
+      return sum;
+    } else {
+      return deepmerge(sum as Partial<unknown>, response as Partial<unknown>);
+    }
+  });
 }

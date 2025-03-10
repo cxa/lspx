@@ -1,4 +1,8 @@
-export const notification2capability = {
+export const method2capability = {
+  // notifications
+  "initialized": "*",
+  "workspace/didChangeConfiguration": "*",
+
   "textDocument/didOpen": "textDocumentSync",
   "textDocument/didChange": "textDocumentSync",
   "textDocument/willSave": "textDocumentSync.willSave",
@@ -11,14 +15,11 @@ export const notification2capability = {
   "workspace/willDeleteFiles": "workspace.fileOperations.willDelete",
   "workspace/didDeleteFiles": "workspace.fileOperations.didDelete",
 
-  "workspace/didChangeConfiguration": "*",
-
   "workspace/didChangeWorkspaceFolders":
     "workspace.workspaceFolders.changeNotifications",
   "workspace/willCreateFiles": "workspace.fileOperations.willCreate",
-} as const;
 
-export const request2capability = {
+  // requsets
   "textDocument/willSaveWaitUntil": "textDocumentSync.willSaveWaitUntil",
   "textDocument/declaration": "declarationProvider",
   "textDocument/definition": "definitionProvider",

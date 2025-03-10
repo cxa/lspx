@@ -117,6 +117,28 @@ describe("lspx", function () {
     });
   });
 
+  describe("hover", () => {
+    beforeEach(function* () {
+      yield* initServer({
+        commands: [
+          "deno -A test/sim/hover.ts",
+          "deno -A test/sim/hover.ts",
+        ],
+      });
+      yield* initialize({ textDocument: { hover: {} } });
+    });
+
+    it("can handle a null response from all the servers", function* () {
+      let result = yield* request("textDocument/hover", {
+        textDocument: {
+          uri: "file:///Users/cowboyd/Code/@cowboyd/lsps/test/lspx.test.ts",
+        },
+        position: { line: 126, character: 12 },
+      });
+      expect(result).toEqual({ ok: true, value: null });
+    });
+  });
+
   describe("client/registerCapability", () => {
     it("forwards dynamic registrations requests to the client");
     it("forwards dynamic unregistrations requests to the client");
