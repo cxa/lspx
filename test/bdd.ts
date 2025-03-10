@@ -5,6 +5,12 @@ import {
 
 import * as bdd from "@std/testing/bdd";
 
+export function assertOk<T>(result: Result<T>): asserts result is { ok: true, value: T } {
+  if (!result.ok) {
+    throw new Error(result.error.message);
+  }
+}
+
 export interface EffectionTestContext {
   ["@effectionx/test-adapter"]: TestAdapter;
 }

@@ -1,9 +1,12 @@
 import { createContext, Err, Ok, type Operation, type Result } from "effection";
 import { type LSPXOptions, start } from "../mod.ts";
-import { beforeEach, describe, expect, it } from "./bdd.ts";
+import { assertOk, beforeEach, describe, expect, it } from "./bdd.ts";
 import { useConnection } from "../lib/json-rpc-connection.ts";
 import { useStreamPair } from "./stream-pair.ts";
 import type {
+  ClientCapabilities,
+  CompletionContext,
+  CompletionItem,
   InitializeResult,
   ServerCapabilities,
 } from "vscode-languageserver-protocol";
@@ -62,10 +65,11 @@ describe("lspx", function () {
     beforeEach(function* () {
       yield* initServer({
         commands: [
-          "deno -A test/sim/completion.ts --triggers a b c",
-          "deno -A test/sim/completion.ts --triggers x y z",
+          "deno -A test/sim/completion.ts --triggers a b c --say alpha",
+          "deno -A test/sim/completion.ts --triggers c d e --say omega",
         ],
       });
+      yield* initialize({ textDocument: { completion: {} } });
     });
     it("merges completion capabilities", function* () {
       expect(yield* capabilities()).toMatchObject({
@@ -74,16 +78,42 @@ describe("lspx", function () {
             "a",
             "b",
             "c",
-            "x",
-            "y",
-            "z",
+            "c",
+            "d",
+            "e",
           ],
         },
       });
     });
-    it("sends completion request to all servers when no trigger is apparent", function* () {
+    it("sends the request to both if both match the trigger", function* () {
+      let result = yield* request<CompletionItem[]>("textDocument/completion", {
+        context: {
+          triggerCharacter: "c",
+        } as CompletionContext,
+      });
+      assertOk(result);
+      let { value: items } = result;
+      expect(items.map(({ label }) => label)).toEqual(["alpha", "omega"]);
     });
-    it("restricts request to those whose triggers were sprung when available", function* () {
+
+    it("only sends the request to one if only one trigger matches", function* () {
+      let result = yield* request<CompletionItem[]>("textDocument/completion", {
+        context: {
+          triggerCharacter: "e",
+        } as CompletionContext,
+      });
+      assertOk(result);
+      let { value: items } = result;
+      expect(items.map(({ label }) => label)).toEqual(["omega"]);
+    });
+
+    it("sends the reuest to all if there is no trigger specified", function* () {
+      let result = yield* request<CompletionItem[]>("textDocument/completion", {
+        context: {} as CompletionContext,
+      });
+      assertOk(result);
+      let { value: items } = result;
+      expect(items.map(({ label }) => label)).toEqual(["alpha", "omega"]);
     });
   });
 
@@ -122,11 +152,19 @@ export function* initServer(options: LSPXOptions): Operation<void> {
   yield* Connection.set(connection);
 }
 
-export function* capabilities(): Operation<ServerCapabilities> {
+const Capabilities = createContext<ServerCapabilities>("capabilities");
+
+export function* initialize(
+  caps: ClientCapabilities = {},
+): Operation<ServerCapabilities> {
   let { capabilities } = unbox(
-    yield* request<InitializeResult>("initialize", {}),
+    yield* request<InitializeResult>("initialize", caps),
   );
-  return capabilities;
+  return yield* Capabilities.set(capabilities);
+}
+
+export function* capabilities(): Operation<ServerCapabilities> {
+  return yield* Capabilities.expect();
 }
 
 export function unbox<T>(result: Result<T>): T {

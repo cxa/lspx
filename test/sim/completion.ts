@@ -2,6 +2,7 @@ import type { Operation } from "effection";
 import { each, main } from "effection";
 import { responseError, useConnection } from "../../lib/json-rpc-connection.ts";
 import type {
+  CompletionItem,
   InitializeParams,
   InitializeResult,
 } from "vscode-languageserver-protocol";
@@ -16,6 +17,9 @@ await main(function* (args) {
       "triggers": {
         type: z.string().array(),
         description: "characters that trigger completion",
+      },
+      "say": {
+        type: z.string().array(),
       },
     })
     .parse(args);
@@ -39,6 +43,9 @@ await main(function* (args) {
           version: "1.0",
         },
       };
+    },
+    *["textDocument/completion"](): Operation<CompletionItem[]> {
+      return opts.say.map((label) => ({ label }));
     },
   };
 

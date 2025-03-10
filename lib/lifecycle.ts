@@ -5,6 +5,7 @@ import { ErrorCodes } from "vscode-jsonrpc";
 import type { InitializeResult } from "vscode-languageserver-protocol";
 import { responseError } from "./json-rpc-connection.ts";
 import * as merge from "./merge.ts";
+import * as dispatch from "./dispatch.ts";
 
 export interface State {
   notify: RPCEndpoint["notify"];
@@ -65,7 +66,6 @@ function initializedState(
       }
     },
     *request(params) {
-      let [first] = agents;
       let [method] = params;
       if (method === "initialize") {
         yield* responseError(
@@ -78,14 +78,9 @@ function initializedState(
           yield* agent.request(params);
         }
         return cast(null);
-      } else if (!first) {
-        throw yield* responseError(
-          ErrorCodes.InternalError,
-          `no lsps to make requests`,
-        );
       }
 
-      return yield* first.request(params);
+      return cast(yield* dispatch.request({agents, params}));
     },
   };
 }
