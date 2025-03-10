@@ -25,10 +25,10 @@ In order to provide this union of functionality, IDEs like VSCode must manage
 three separate language server processes and then handle the dispatch and
 synchronization of all edits and user inputs to each one. What this means in
 practice is that in the example above, if you hover over a symbol, that hover
-should be sent to each of the typescript, tailwind, and eslint servers.
-Then any hints, overlays that any of them have should be collated and displayed
-at that point. This is a complex process, and furthermore it is required that it
-be duplicated inside every single IDE that wants to use more than one language
+should be sent to each of the typescript, tailwind, and eslint servers. Then any
+hints, overlays that any of them have should be collated and displayed at that
+point. This is a complex process, and furthermore it is required that it be
+duplicated inside every single IDE that wants to use more than one language
 server per buffer.
 
 `lspx` combines the capabilities of any number language servers into one, so
@@ -41,6 +41,8 @@ lspx --lsp "typescript-language-server --stdio" --lsp "tailwindcss-language-serv
 ```
 
 ## supervisor
+
+//TODO
 
 `lspx` manages the language server processes that it proxies and will attempt to
 restart them if they fail. How many times and at what interval is configurable.
@@ -56,7 +58,29 @@ lspx --lsp "deno lsp" --lsp "tailwindcss-language-server" --interactive
 lspx
 |
 +-> deno lsp
-+-> tailwindcss-language-server
++-> tailwindcss-language-server --stdio
 
 LSP> initialize({ "capabilities": {} })
 ```
+
+## Development
+
+Requires [Deno](https://deno.land) >= 2.0
+
+### compile
+
+```
+deno task compile
+```
+
+### test
+
+```
+deno task test
+```
+
+### dispatch
+
+The actual logic of matching requests to servers and merging the responses
+happens in [dispatch.ts](./lib/dispatch.ts), so if you're looking to extend the
+functionality, that's a great place to start.

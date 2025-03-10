@@ -14,6 +14,7 @@
     "deepmerge": "npm:deepmerge@^4.3.1",
     "effection": "jsr:@effection/effection@^4.0.0-alpha.7",
     "@std/assert": "jsr:@std/assert@1",
+    "optics-ts": "npm:optics-ts@^2.4.1",
     "vscode-jsonrpc": "npm:vscode-jsonrpc@^8.2.1",
     "vscode-languageserver-protocol": "npm:vscode-languageserver-protocol@^3.17.5",
     "zod": "npm:zod@^3.24.2",

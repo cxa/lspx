@@ -19,6 +19,7 @@
     "npm:@types/node@*": "22.5.4",
     "npm:deepmerge@^4.3.1": "4.3.1",
     "npm:effection@4.0.0-alpha.5": "4.0.0-alpha.5",
+    "npm:optics-ts@^2.4.1": "2.4.1",
     "npm:vscode-jsonrpc@^8.2.1": "8.2.1",
     "npm:vscode-languageserver-protocol@^3.17.5": "3.17.5",
     "npm:zod-opts@~0.1.8": "0.1.8",
@@ -104,6 +105,9 @@
     "effection@4.0.0-alpha.5": {
       "integrity": "sha512-7s8dwQF8oqOxtsUrFMRQBUOWXq23Khb/IYurwqEnSTUwsgkSgQww/9A9aBwdRQ1hMmELouy/YkvhC7e9oGQfbA=="
     },
+    "optics-ts@2.4.1": {
+      "integrity": "sha512-HaYzMHvC80r7U/LqAd4hQyopDezC60PO2qF5GuIwALut2cl5rK1VWHsqTp0oqoJJWjiv6uXKqsO+Q2OO0C3MmQ=="
+    },
     "undici-types@6.19.8": {
       "integrity": "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="
     },
@@ -141,6 +145,7 @@
       "jsr:@std/expect@^1.0.13",
       "jsr:@std/testing@^1.0.9",
       "npm:deepmerge@^4.3.1",
+      "npm:optics-ts@^2.4.1",
       "npm:vscode-jsonrpc@^8.2.1",
       "npm:vscode-languageserver-protocol@^3.17.5",
       "npm:zod-opts@~0.1.8",

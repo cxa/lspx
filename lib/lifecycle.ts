@@ -60,10 +60,7 @@ function initializedState(
 ): State {
   return {
     *notify(params) {
-      // TODO: only forward notifications to interested agents
-      for (let agent of agents) {
-        yield* agent.notify(params);
-      }
+      yield* dispatch.notification({ agents, params });
     },
     *request(params) {
       let [method] = params;
@@ -80,7 +77,7 @@ function initializedState(
         return cast(null);
       }
 
-      return cast(yield* dispatch.request({agents, params}));
+      return cast(yield* dispatch.request({ agents, params }));
     },
   };
 }
