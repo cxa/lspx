@@ -1,13 +1,13 @@
 import { all, type Operation } from "effection";
 import type { LSPAgent, NotificationParams, RequestParams } from "./types.ts";
 import deepmerge from "deepmerge";
+import { get, optic } from "optics-ts";
 import { request2capability } from "./capabilities.ts";
+import { responseError } from "./json-rpc-connection.ts";
 import {
   type CompletionParams,
   ErrorCodes,
 } from "vscode-languageserver-protocol";
-import { responseError } from "./json-rpc-connection.ts";
-import * as O from "optics-ts";
 
 /**
  * An incomping request that should be delegated to some group of server
@@ -111,9 +111,9 @@ interface Match {
 function defaultMatch(canddidates: LSPAgent[], method: string): Match {
   let capabilityPath =
     request2capability[method as keyof typeof request2capability];
-  let optic = O.optic().path(capabilityPath);
+  let path = optic().path(capabilityPath);
   let agents = canddidates.filter((agent) => {
-    return !!O.get(optic)(agent.capabilities);
+    return !!get(path)(agent.capabilities);
   });
   return { agents };
 }
