@@ -1,4 +1,4 @@
-import { each, main } from "effection";
+import { main, suspend } from "effection";
 
 import * as z from "zod";
 import { parser } from "zod-opts";
@@ -27,12 +27,8 @@ await main(function* (argv) {
   } else {
     let input = Deno.stdin.readable;
     let output = Deno.stdout.writable;
-    let lspx = yield* start({ input, output, ...opts, commands: opts.lsp });
-    for (let [method] of yield* each(lspx.notifications)) {
-      if (method === "exit") {
-        break;
-      }
-      yield* each.next();
-    }
+    yield* start({ input, output, ...opts, commands: opts.lsp });
+
+    yield* suspend();
   }
 });
