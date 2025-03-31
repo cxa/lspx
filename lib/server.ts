@@ -1,5 +1,5 @@
 import { each, type Operation, resource, spawn } from "effection";
-import type { RPCEndpoint } from "./types.ts";
+import type { LSPAgent, RPCEndpoint } from "./types.ts";
 
 import { useDaemon } from "./use-command.ts";
 import { useConnection } from "./json-rpc-connection.ts";
@@ -14,7 +14,7 @@ export interface LSPXOptions {
 
 export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
   return resource(function* (provide) {
-    let servers: RPCEndpoint[] = [];
+    let agents: LSPAgent[] = [];
 
     for (let command of opts.commands) {
       let [exe, ...args] = command.split(/\s/g);
@@ -24,14 +24,21 @@ export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
         stdout: "piped",
         stderr: "piped",
       });
+
       let server = yield* useConnection({
         read: process.stdout,
         write: process.stdin,
       });
-      servers.push(server);
+
+      agents.push({
+        ...server,
+        name: exe,
+        capabilities: {},
+        initialization: { capabilities: {} },
+      });
     }
 
-    let multiplexer = yield* useMultiplexer({ servers });
+    let multiplexer = yield* useMultiplexer({ agents, middlewares: [] });
 
     let client = yield* useConnection({
       read: opts.input ?? new ReadableStream(),
@@ -39,8 +46,8 @@ export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
     });
 
     yield* spawn(function* () {
-      for (let notification of yield* each(multiplexer.notifications)) {
-        yield* client.notify(notification);
+      for (let respondWith of yield* each(multiplexer.notifications)) {
+        yield* respondWith(client.notify);
         yield* each.next();
       }
     });
@@ -60,8 +67,8 @@ export function start(opts: LSPXOptions): Operation<RPCEndpoint> {
     });
 
     yield* spawn(function* () {
-      for (let notification of yield* each(client.notifications)) {
-        yield* multiplexer.notify(notification);
+      for (let respondWith of yield* each(client.notifications)) {
+        yield* respondWith(multiplexer.notify);
         yield* each.next();
       }
     });
