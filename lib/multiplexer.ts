@@ -10,7 +10,9 @@ import type {
 } from "./types.ts";
 import { lifecycle } from "./lifecycle.ts";
 import { combineLSPXMiddlewares } from "./middleware.ts";
-import { defaultNotify, defaultRequest } from "./dispatch.ts";
+import { defaultHandler } from "./dispatch.ts";
+import { responseError } from "./json-rpc-connection.ts";
+import { ErrorCodes } from "vscode-languageserver-protocol";
 
 export interface MultiplexerOptions {
   agents: LSPAgent[];
@@ -24,6 +26,7 @@ export function useMultiplexer(
     let { client2Server, server2Client } = combineLSPXMiddlewares([
       lifecycle(),
       ...options.middlewares,
+      defaultHandler(),
     ]);
 
     let { agents } = options;
@@ -62,9 +65,18 @@ export function useMultiplexer(
       notifications,
       requests,
       notify: (params) =>
-        client2Server.notify({ agents, params }, defaultNotify),
+        client2Server.notify({ agents, params }, function* ({ params }) {
+          let [method, ...rest] = params;
+          console.error(`no handler found for notification '${method}'`, rest);
+        }),
       request: <T>(params: RequestParams) =>
-        client2Server.request({ agents, params }, defaultRequest) as Operation<
+        client2Server.request({ agents, params }, function* ({ params }) {
+          let [method] = params;
+          return yield* responseError(
+            ErrorCodes.MethodNotFound,
+            `no handler found for '${method}'`,
+          );
+        }) as Operation<
           T
         >,
     };

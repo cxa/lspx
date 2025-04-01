@@ -1,6 +1,7 @@
 import { all, type Operation } from "effection";
 import type {
   LSPAgent,
+  LSPXMiddleware,
   RequestParams,
   XClientNotification,
   XClientRequest,
@@ -13,6 +14,16 @@ import {
   type CompletionParams,
   ErrorCodes,
 } from "vscode-languageserver-protocol";
+import { createLSPXMiddleware } from "./middleware.ts";
+
+export function defaultHandler(): LSPXMiddleware {
+  return createLSPXMiddleware({
+    client2server: {
+      request: defaultRequest,
+      notify: defaultNotify,
+    },
+  });
+}
 
 /**
  * Dispatch an incoming request from the client to a set of matching
@@ -46,6 +57,17 @@ export function* defaultRequest(options: XClientRequest): Operation<unknown> {
 export function* defaultNotify(options: XClientNotification): Operation<void> {
   let [method] = options.params;
   let handler = defaultMatch(options.agents, method);
+  if (handler.agents.length === 0) {
+    console.error(
+      `no matching agents found for notification '${
+        options.params[0]
+      }. candidates are`,
+      options.agents.map((a) => ({
+        name: a.name,
+        capabilities: a.capabilities,
+      })),
+    );
+  }
 
   yield* all(
     handler.agents.map((agent) => agent.notify(options.params)),

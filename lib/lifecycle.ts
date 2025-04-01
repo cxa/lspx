@@ -1,4 +1,4 @@
-import { all, call, createContext } from "effection";
+import { all, call } from "effection";
 import type { LSPAgent, LSPXMiddleware } from "./types.ts";
 import { ErrorCodes } from "vscode-jsonrpc";
 import type { InitializeResult } from "vscode-languageserver-protocol";
@@ -6,35 +6,38 @@ import { responseError } from "./json-rpc-connection.ts";
 import * as merge from "./merge.ts";
 import { createLSPXMiddleware } from "./middleware.ts";
 
-const State = createContext<LSPXMiddleware>("lspx.state", uninitialized());
-
 export function lifecycle(): LSPXMiddleware {
+  let transition = (state: State) => {
+    currentState = state;
+  };
+  let currentState = uninitialized(transition);
+
   return createLSPXMiddleware({
     client2server: {
       *request(params, next) {
-        let state = yield* State.expect();
-        return yield* state.client2Server.request(params, next);
+        let { middleware: { client2Server } } = currentState;
+        return yield* client2Server.request(params, next);
       },
       *notify(params, next) {
-        let state = yield* State.expect();
-        return yield* state.client2Server.notify(params, next);
+        let { middleware: { client2Server } } = currentState;
+        return yield* client2Server.notify(params, next);
       },
     },
     server2client: {
       *request(params, next) {
-        let state = yield* State.expect();
-        return yield* state.server2Client.request(params, next);
+        let { middleware: { server2Client } } = currentState;
+        return yield* server2Client.request(params, next);
       },
       *notify(params, next) {
-        let state = yield* State.expect();
-        return yield* state.server2Client.notify(params, next);
+        let { middleware: { server2Client } } = currentState;
+        return yield* server2Client.notify(params, next);
       },
     },
   });
 }
 
-function uninitialized(): LSPXMiddleware {
-  return createLSPXMiddleware({
+function uninitialized(transition: (state: State) => void): State {
+  let middleware = createLSPXMiddleware({
     client2server: {
       *request(options) {
         let [method] = options.params;
@@ -60,20 +63,19 @@ function uninitialized(): LSPXMiddleware {
           ),
         );
 
-        yield* State.set(initialized(agents));
+        transition(initialized(agents, transition));
 
         return cast(merge.capabilities(agents));
       },
     },
   });
+  return { name: "UNINITIALIZED", middleware };
 }
 
-function initialized(agents: LSPAgent[]): LSPXMiddleware {
-  return createLSPXMiddleware({
+function initialized(agents: LSPAgent[], transition: SetState): State {
+  let middleware = createLSPXMiddleware({
     client2server: {
-      notify(options, next) {
-        return next({ ...options, agents });
-      },
+      notify: (options, next) => next({ ...options, agents }),
       *request(options, next) {
         let [method] = options.params;
         if (method === "initialize") {
@@ -82,7 +84,7 @@ function initialized(agents: LSPAgent[]): LSPXMiddleware {
             `initialize invoked twice`,
           );
         } else if (method === "shutdown") {
-          yield* State.set(shutdown());
+          transition(shutdown());
           yield* all(agents.map((agent) => agent.request(options.params)));
           return null;
         } else {
@@ -91,10 +93,12 @@ function initialized(agents: LSPAgent[]): LSPXMiddleware {
       },
     },
   });
+
+  return { name: "INITIALIZED", middleware };
 }
 
-function shutdown(): LSPXMiddleware {
-  return createLSPXMiddleware({
+function shutdown(): State {
+  let middleware = createLSPXMiddleware({
     client2server: {
       *request() {
         return yield* responseError(
@@ -104,6 +108,16 @@ function shutdown(): LSPXMiddleware {
       },
     },
   });
+  return { name: "SHUTDOWN", middleware };
 }
 
 const cast = <T>(value: unknown) => value as T;
+
+interface State {
+  name: string;
+  middleware: LSPXMiddleware;
+}
+
+interface SetState {
+  (state: State): void;
+}

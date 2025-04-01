@@ -27,8 +27,14 @@ await main(function* (argv) {
   } else {
     let input = Deno.stdin.readable;
     let output = Deno.stdout.writable;
-    yield* start({ input, output, ...opts, commands: opts.lsp });
+    yield* start({ input, output, errput, ...opts, commands: opts.lsp });
 
     yield* suspend();
   }
 });
+
+function errput(buffer: Uint8Array): void {
+  for (let written = 0; written < buffer.length;) {
+    written += Deno.stderr.writeSync(buffer.slice(written));
+  }
+}
