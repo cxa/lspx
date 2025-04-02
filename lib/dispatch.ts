@@ -1,5 +1,11 @@
 import { all, type Operation } from "effection";
-import type { LSPAgent, NotificationParams, RequestParams } from "./types.ts";
+import type {
+  LSPAgent,
+  LSPXMiddleware,
+  RequestParams,
+  XClientNotification,
+  XClientRequest,
+} from "./types.ts";
 import deepmerge from "deepmerge";
 import { get, optic } from "optics-ts";
 import { method2capability } from "./capabilities.ts";
@@ -8,13 +14,15 @@ import {
   type CompletionParams,
   ErrorCodes,
 } from "vscode-languageserver-protocol";
+import { createLSPXMiddleware } from "./middleware.ts";
 
-/**
- * An incomping request that should be delegated to some group of server
- */
-export interface RequestOptions {
-  agents: LSPAgent[];
-  params: RequestParams;
+export function defaultHandler(): LSPXMiddleware {
+  return createLSPXMiddleware({
+    client2server: {
+      request: defaultRequest,
+      notify: defaultNotify,
+    },
+  });
 }
 
 /**
@@ -22,7 +30,7 @@ export interface RequestOptions {
  * agents, and then merge the responses from each one into a single
  * response
  */
-export function* request(options: RequestOptions): Operation<unknown> {
+export function* defaultRequest(options: XClientRequest): Operation<unknown> {
   let { agents, params } = options;
   let handler = match(agents, params);
 
@@ -42,18 +50,24 @@ export function* request(options: RequestOptions): Operation<unknown> {
   return merge(responses);
 }
 
-export interface NotificationOptions {
-  agents: LSPAgent[];
-  params: NotificationParams;
-}
-
 /**
  * Dispatch an incoming notification from the client to a set of
  * matching agents.
  */
-export function* notification(options: NotificationOptions): Operation<void> {
+export function* defaultNotify(options: XClientNotification): Operation<void> {
   let [method] = options.params;
   let handler = defaultMatch(options.agents, method);
+  if (handler.agents.length === 0) {
+    console.error(
+      `no matching agents found for notification '${
+        options.params[0]
+      }. candidates are`,
+      options.agents.map((a) => ({
+        name: a.name,
+        capabilities: a.capabilities,
+      })),
+    );
+  }
 
   yield* all(
     handler.agents.map((agent) => agent.notify(options.params)),
@@ -75,7 +89,7 @@ export function match(agents: LSPAgent[], params: RequestParams): Match {
  * If the completion trigger is not specified as one of the triggers
  * that an agent is providing, then it will not be sent the request.
  */
-function completion(options: RequestOptions): Match {
+function completion(options: XClientRequest): Match {
   let { context } = options.params[1] as CompletionParams;
   let agents = options.agents.filter((agent) => {
     let capability = agent.capabilities.completionProvider;

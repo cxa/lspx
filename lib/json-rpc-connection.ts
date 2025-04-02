@@ -13,8 +13,8 @@ import {
 } from "effection";
 import * as rpc from "vscode-jsonrpc/node.js";
 import type {
+  LSPServerNotification,
   LSPServerRequest,
-  NotificationParams,
   RPCEndpoint,
 } from "./types.ts";
 import { disposable, disposableScope } from "./disposable.ts";
@@ -50,11 +50,13 @@ export function useConnection(
       rpc.createMessageConnection(readable, writable),
     );
 
-    let notifications = createSignal<NotificationParams>();
+    let notifications = createSignal<LSPServerNotification>();
     let requests = createSignal<LSPServerRequest>();
 
     yield* disposable(
-      connection.onNotification((...params) => notifications.send(params)),
+      connection.onNotification((...params) => {
+        notifications.send((execute) => execute(params));
+      }),
     );
 
     yield* disposable(connection.onRequest((...params) => {
