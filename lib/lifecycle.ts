@@ -29,6 +29,14 @@ export function lifecycle(): LSPXMiddleware {
         return yield* server2Client.request(params, next);
       },
       *notify(params, next) {
+				const [method, ...reqParams] = params.params;
+				reqParams.forEach((p) => {
+					if (typeof p === 'object'
+							&& p !== null
+							&& method === 'textDocument/publishDiagnostics') {
+						(p as Record<string, unknown>)._lspx_agent = params.agent.name;
+					}
+				});
         let { middleware: { server2Client } } = currentState;
         return yield* server2Client.notify(params, next);
       },
